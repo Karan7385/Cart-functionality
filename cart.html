@@ -149,7 +149,7 @@
         document.getElementById('checkout-button').addEventListener('click', () => {
             const cartData = JSON.stringify(cartItems);
 
-            fetch('https://taskbynewweb.netlify.app/checkout.php', {
+            fetch('checkout.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
