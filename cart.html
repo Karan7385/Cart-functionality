@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://kit.fontawesome.com/596840f36d.js" crossorigin="anonymous"></script>
+    <title>Cart - Royaldivine Produce Products LLP</title>
+</head>
+
+<body class="bg-slate-100">
+    <div class="w-11/12 mx-auto bg-white shadow-lg my-5 pb-5">
+        <!-- Navbar -->
+        <nav class="flex justify-between items-center p-5 bg-white shadow-md">
+            <!-- Logo -->
+            <div class="flex items-center space-x-2">
+                <img src="./public/images/logo.png" alt="Royaldivine Logo" class="h-12">
+                <span class="font-bold text-lg">Royaldivine</span>
+            </div>
+
+            <ul class="flex space-x-8 items-center">
+                <li><a href="./index.html" class="nav-link"><i class="fas fa-home"></i><span>Home</span></a></li>
+                <li><a href="#" class="nav-link"><i class="fas fa-box-open"></i><span>Products</span></a></li>
+                <li>
+                    <a href="./cart.html" class="nav-link">
+                        <i class="fas fa-shopping-cart"></i><span>Cart (<span id="cart-count">0</span>)</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <h2 class="text-center text-3xl font-bold my-5">Your Cart</h2>
+        <div id="cart-items" class="p-5">
+            <p class="text-center">No items in your cart.</p>
+        </div>
+
+        <!-- Update Checkout Section -->
+        <div id="checkout-section" class="p-5 flex justify-between items-center border-t">
+            <div class="text-lg font-semibold">Total: $<span id="total-price">0.00</span></div>
+            <button id="checkout-button" class="bg-green-500 text-white px-4 py-2 rounded" disabled>
+                Checkout
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        const cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
+
+        // Update cart count in the navbar
+        const updateCartCount = () => {
+            const cartCount = cartItems.length;
+            document.getElementById('cart-count').innerText = cartCount;
+        };
+
+        // Remove item from cart
+        const removeFromCart = (id) => {
+            const updatedCartItems = cartItems.filter(item => item.id !== id);
+            localStorage.setItem('cartItems', JSON.stringify(updatedCartItems));
+            displayCartItems(); // Refresh the cart display
+            updateCartCount(); // Update the cart count
+        };
+
+        // Increase item quantity
+        const increaseQuantity = (id) => {
+            const item = cartItems.find(item => item.id === id);
+            if (item) {
+                item.quantity += 1; // Increase quantity
+                localStorage.setItem('cartItems', JSON.stringify(cartItems));
+                displayCartItems(); // Refresh the cart display
+            }
+        };
+
+        // Decrease item quantity
+        const decreaseQuantity = (id) => {
+            const item = cartItems.find(item => item.id === id);
+            if (item && item.quantity > 1) {
+                item.quantity -= 1; // Decrease quantity
+                localStorage.setItem('cartItems', JSON.stringify(cartItems));
+                displayCartItems(); // Refresh the cart display
+            } else if (item && item.quantity === 1) {
+                removeFromCart(id); // Remove item if quantity is 1
+            }
+        };
+
+        // Calculate total price
+        const calculateTotalPrice = () => {
+            return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0).toFixed(2);
+        };
+
+        // Display cart items
+        const displayCartItems = () => {
+            const cartItemsContainer = document.getElementById('cart-items');
+            cartItemsContainer.innerHTML = ''; // Clear previous items
+
+            if (cartItems.length === 0) {
+                cartItemsContainer.innerHTML = '<p class="text-center">No items in your cart.</p>';
+                document.getElementById('total-price').innerText = '0.00';
+                document.getElementById('checkout-button').disabled = true;
+                return;
+            }
+
+            cartItems.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'flex justify-between items-center border-b py-4';
+                itemDiv.innerHTML = `
+                    <div>
+                        <h3 class="text-lg font-semibold">${item.name}</h3>
+                        <p class="text-gray-600">Price: $${item.price}</p>
+                        <div class="flex items-center space-x-2 mt-2">
+                            <button onclick="decreaseQuantity('${item.id}')" class="bg-yellow-500 text-white px-2 py-1 rounded">-</button>
+                            <span>${item.quantity}</span>
+                            <button onclick="increaseQuantity('${item.id}')" class="bg-yellow-500 text-white px-2 py-1 rounded">+</button>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="text-lg font-semibold">$${(item.price * item.quantity).toFixed(2)}</div>
+                        <button onclick="removeFromCart('${item.id}')" class="bg-red-500 text-white px-3 py-1 rounded">Remove</button>
+                    </div>
+                `;
+                cartItemsContainer.appendChild(itemDiv);
+            });
+
+            // Update total price and checkout button
+            document.getElementById('total-price').innerText = calculateTotalPrice();
+            document.getElementById('checkout-button').disabled = false; // Enable the checkout button
+        };
+
+        // Add event listener to checkout button
+        document.getElementById('checkout-button').addEventListener('click', () => {
+            const cartData = JSON.stringify(cartItems);
+
+            fetch('checkout.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: cartData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Redirect to payment page after successful order creation
+                        window.location.href = './payment.php';
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        });
+
+
+        // Initialize cart count and display cart items on page load
+        updateCartCount();
+        displayCartItems();
+    </script>
+</body>
+
+</html>
